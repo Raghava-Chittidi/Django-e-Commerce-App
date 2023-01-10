@@ -1,0 +1,105 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Listing: {{ listing.title }}</h2>
+
+    <!-- Show the add to watchlist button if listing is not in the watchlist -->
+    {% if listing not in watchlist %}
+        <form action="{% url 'watchlist' %}" method="post">
+            {% csrf_token %}
+            <input type="submit" value="Add To Watchlist" class="watchlist-btn">
+            <input type="hidden" value="{{ listing.id }}" name="id">
+            <input type="hidden" value="add" name="check">
+        </form>
+        
+    <!-- Show the remove from watchlist button if listing is in the watchlist -->
+    {% else %}
+        <form action="{% url 'watchlist' %}" method="post">
+            {% csrf_token %}
+            <input type="submit" value="Remove from Watchlist" class="watchlist-btn">
+            <input type="hidden" value="{{ listing.id }}" name="id">
+            <input type="hidden" value="remove" name="check">
+        </form>
+    {% endif %}
+
+    <div class="div-img">
+        <img src="{{ listing.photo }}" alt="{{ listing.title }}" width="400px">
+    </div>
+    <div id="bid-desc"><h5 style="display: inline;">Description: </h5>{{ listing.description }}</div>
+    <h3 id="bid-price">${{ listing.price }}</h3>
+    
+    <!-- If auction has not been closed by the creator then show the current bid -->
+    {% if listing.active == True %}
+        <div>
+            {{ number }} bid(s) so far. Your bid is the current bid.
+        </div>
+
+        <form action="{% url 'listing' listing.id %}" method="post">
+            {% csrf_token %}
+            <input type="number" step="0.01" name="bid" id="bid-input" placeholder="Bid" autocomplete="off">
+            <input type="submit" value="Place Bid" id="place-bid" class="listing-btns">
+        </form>
+
+        <div class="listing-details-div">
+            <h3>Details</h3>
+            <ul>
+                <li>Listed By: <span style="color: blue;">{{ listing.user }}</span></li>
+                <li>Category: {{ listing.category }}</li>
+            </ul>
+        </div> 
+
+        <!-- Show the close auction button is the creator of the listing is the current user logged in -->
+        {% if user == listing.user %}
+            <form action="{% url 'index' %}" method="post">
+                {% csrf_token %}
+                <input type="submit" name="close" id="close-auction" value="Close Auction" class="listing-btns">
+                <input type="hidden" name="listing" value="{{ listing.id }}">
+                <input type="hidden" name="bidID" value="{{ number }}">
+            </form>
+        {% else %}
+        {% endif %}
+
+
+        <!-- Comments section -->
+        <h3>Comments</h3>
+
+        <!-- Show comments that have already been made -->
+        {% for comment in comments %}
+            {% if comment.listing.id == listing.id %}
+            <div class="comment-div">
+                <div class="profile-div">
+                    <img src="https://t4.ftcdn.net/jpg/00/65/77/27/360_F_65772719_A1UV5kLi5nCEWI0BNLLiFaBPEkUbv5Fv.jpg" alt="User" width="50px" class="user-icon">
+                    <span class="profile-name">{{ comment.user }}</span>
+                </div>
+                <form action="{% url 'listing' listing.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="user-comment-div">{{ comment.comment }}</div>
+                </form>  
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Commentbox for user looking at the listing to comment in -->
+        <div class="comment-div">
+            <div class="profile-div">
+                <img src="https://t4.ftcdn.net/jpg/00/65/77/27/360_F_65772719_A1UV5kLi5nCEWI0BNLLiFaBPEkUbv5Fv.jpg" alt="User" width="50px" class="user-icon">
+                <span class="profile-name">{{ user }}</span>
+            </div>
+            <form action="{% url 'listing' listing.id %}" method="post">
+                {% csrf_token %}
+                <textarea name="comment" class="commentbox" cols="160" rows="5" maxlength="500"></textarea>
+                <input type="submit" value="Add Comment" class="listing-btns comment-btn">
+            </form>  
+        </div>
+    
+    <!-- If auction is closed by the creator -->
+    {% else %}
+            {% if user.username == listing.winner %}
+                <h3>Congrats you have won this auction!</h3>
+            {% elif user == listing.user %}
+                <h3>You have closed this auction. Item has been successfully sold to {{ listing.winner }}</h3>
+            {% else %}
+                <h3>Sorry you did not win this auction.</h3>
+            {% endif %}
+    {% endif %}
+{% endblock %} 
